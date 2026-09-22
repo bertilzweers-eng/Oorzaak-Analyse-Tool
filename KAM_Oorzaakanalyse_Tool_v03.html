@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KAM Oorzaakanalyse | ROVA v03</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
+<style>
+  :root{
+    --blue:#002C5B;
+    --blue-light:#0F4C81;
+    --green:#71A810;
+    --green-dark:#5C8A0C;
+    --orange:#E37222;
+    --bg:#F3F6F7;
+    --card:#FFFFFF;
+    --text:#1B2733;
+    --text-muted:#5B6B77;
+    --border:#DCE4E8;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'DM Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.5;
+  }
+  a{color:inherit;}
+
+  /* ---------- Layout ---------- */
+  .app{
+    display:grid;
+    grid-template-columns:260px 1fr;
+    min-height:100vh;
+  }
+  header.topbar{
+    grid-column:1 / -1;
+    background:var(--blue);
+    color:#fff;
+    padding:18px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .brand-mark{
+    width:40px;height:40px;border-radius:9px;
+    background:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;color:#fff;
+    flex-shrink:0;
+    border:2px solid rgba(255,255,255,0.25);
+  }
+  .brand-text h1{margin:0;font-size:17px;font-weight:700;letter-spacing:.2px;}
+  .brand-text p{margin:2px 0 0;font-size:12.5px;color:#C9D6E0;}
+  .topbar-actions{display:flex;gap:8px;align-items:center;}
+  .topbar-actions .save-indicator{
+    font-size:12px;color:#B9E27A;display:flex;align-items:center;gap:6px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;}
+
+  nav.sidebar{
+    background:#fff;
+    border-right:1px solid var(--border);
+    padding:22px 14px;
+    position:sticky;
+    top:0;
+    align-self:start;
+    height:100vh;
+    overflow-y:auto;
+  }
+  nav.sidebar ol{list-style:none;margin:0;padding:0;counter-reset:step;}
+  nav.sidebar li{counter-increment:step;margin-bottom:4px;}
+  nav.sidebar a{
+    display:flex;align-items:center;gap:10px;
+    text-decoration:none;
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:13.5px;
+    font-weight:500;
+    color:var(--text-muted);
+    transition:background .15s, color .15s;
+  }
+  nav.sidebar a:hover{background:#EEF3F5;color:var(--blue);}
+  nav.sidebar a.active{background:#EAF1E3;color:var(--green-dark);font-weight:700;}
+  nav.sidebar .num{
+    width:22px;height:22px;border-radius:50%;
+    background:#E5EBEE;color:var(--text-muted);
+    font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  nav.sidebar a.active .num{background:var(--green);color:#fff;}
+  nav.sidebar a.done .num{background:var(--blue-light);color:#fff;}
+  nav.sidebar .reset-btn{
+    margin-top:18px;width:100%;
+    background:none;border:1px solid var(--border);
+    color:var(--text-muted);font-size:12.5px;
+    padding:9px 10px;border-radius:8px;cursor:pointer;
+    font-family:inherit;
+  }
+  nav.sidebar .reset-btn:hover{border-color:var(--orange);color:var(--orange);}
+
+  main{padding:32px 40px 90px;max-width:900px;}
+
+  section.card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:26px 30px;
+    margin-bottom:24px;
+    scroll-margin-top:20px;
+  }
+  section.card h2{
+    margin:0 0 4px;
+    font-size:19px;
+    color:var(--blue);
+    display:flex;align-items:center;gap:10px;
+  }
+  section.card h2 .badge{
+    background:var(--blue);color:#fff;
+    width:26px;height:26px;border-radius:7px;
+    font-size:13px;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  section.card .hint{
+    font-size:13px;color:var(--text-muted);margin:0 0 20px 36px;
+  }
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;
+  }
+  .field .sub{font-weight:400;color:var(--text-muted);font-size:12px;}
+  input[type=text], input[type=date], input[type=number], textarea, select{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    font-family:inherit;
+    font-size:14px;
+    color:var(--text);
+    background:#FBFCFD;
+    resize:vertical;
+  }
+  input:focus, textarea:focus, select:focus{
+    outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(113,168,16,0.15);
+    background:#fff;
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+  @media (max-width:720px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+  /* ---------- Method toggle ---------- */
+  .method-toggle{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+  .method-toggle button{
+    flex:1;min-width:140px;
+    padding:11px 14px;border-radius:8px;
+    border:1px solid var(--border);background:#FBFCFD;
+    font-family:inherit;font-size:13.5px;font-weight:600;color:var(--text-muted);
+    cursor:pointer;transition:all .15s;
+  }
+  .method-toggle button.active{
+    background:var(--blue);border-color:var(--blue);color:#fff;
+  }
+  .method-block{display:none;}
+  .method-block.visible{display:block;}
+
+  /* ---------- 5x Why ---------- */
+  .why-row{
+    display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;
+    padding-left:2px;
+  }
+  .why-row .why-num{
+    width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;
+    flex-shrink:0;margin-top:4px;
+  }
+  .why-row input{flex:1;}
+  .why-row .why-remove{
+    background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;
+    padding:4px 8px;margin-top:2px;line-height:1;
+  }
+  .why-row .why-remove:hover{color:var(--orange);}
+  .why-connector{width:30px;display:flex;justify-content:center;color:var(--border);font-size:14px;margin:-6px 0;}
+  .link-btn{
+    background:none;border:none;color:var(--blue-light);font-weight:600;font-size:13px;
+    cursor:pointer;padding:6px 0;font-family:inherit;display:inline-flex;align-items:center;gap:5px;
+  }
+  .link-btn:hover{color:var(--green-dark);}
+
+  .rootcause-box{
+    margin-top:18px;padding:16px;background:#F6F9F1;border:1px solid #DCEAC7;border-radius:8px;
+  }
+  .rootcause-box label{color:var(--green-dark);}
+
+  /* ---------- Ishikawa ---------- */
+  .fishbone-wrap{overflow-x:auto;margin-bottom:20px;}
+  .fishbone-wrap svg{display:block;min-width:640px;width:100%;height:auto;}
+  .ishikawa-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:720px){.ishikawa-grid{grid-template-columns:1fr;}}
+  .ishikawa-cat label{display:flex;align-items:center;gap:8px;}
+  .ishikawa-cat .swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+  .ishikawa-cat textarea{min-height:70px;}
+
+  /* ---------- Scope ---------- */
+  .impact-select{display:flex;gap:8px;}
+  .impact-select label{
+    flex:1;text-align:center;border:1px solid var(--border);border-radius:7px;
+    padding:10px 6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);
+    background:#FBFCFD;
+  }
+  .impact-select input{display:none;}
+  .impact-select input:checked + span{color:#fff;}
+  .impact-select label:has(input:checked){background:var(--blue);border-color:var(--blue);color:#fff;}
+
+  /* ---------- Maatregelen table ---------- */
+  table.measures{width:100%;border-collapse:collapse;margin-bottom:14px;}
+  table.measures th{
+    background:var(--blue);color:#fff;font-size:12.5px;text-align:left;
+    padding:10px 12px;font-weight:600;
+  }
+  table.measures th:first-child{border-radius:7px 0 0 0;}
+  table.measures th:last-child{border-radius:0 7px 0 0;}
+  table.measures td{
+    padding:8px;border-bottom:1px solid var(--border);vertical-align:top;
+  }
+  table.measures td textarea, table.measures td input{border:1px solid transparent;background:transparent;padding:8px;}
+  table.measures td textarea:focus, table.measures td input:focus{background:#fff;border-color:var(--green);}
+  table.measures td.rm{width:36px;text-align:center;}
+  table.measures td.rm button{
+    background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:17px;
+  }
+  table.measures td.rm button:hover{color:var(--orange);}
+  table.measures col.col-m{width:44%;}
+  table.measures col.col-v{width:26%;}
+  table.measures col.col-d{width:24%;}
+  table.measures col.col-rm{width:6%;}
+
+  /* ---------- Export ---------- */
+  .export-options{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+  .check-tile{
+    flex:1;min-width:180px;
+    border:1.5px solid var(--border);border-radius:9px;padding:14px 16px;
+    display:flex;align-items:center;gap:12px;cursor:pointer;
+    background:#FBFCFD;
+  }
+  .check-tile.active{border-color:var(--green);background:#F6F9F1;}
+  .check-tile input{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
+  .check-tile .ct-icon{
+    width:34px;height:34px;border-radius:7px;background:var(--blue);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;
+  }
+  .check-tile .ct-text b{display:block;font-size:14px;}
+  .check-tile .ct-text span{font-size:12px;color:var(--text-muted);}
+
+  .filename-preview{
+    background:#F6F9F1;border:1px dashed #B7CE8E;border-radius:8px;
+    padding:12px 14px;font-family:'DM Mono','Courier New',monospace;font-size:13.5px;
+    color:var(--green-dark);margin-bottom:20px;word-break:break-all;
+  }
+  .filename-preview span.lbl{display:block;font-family:'DM Sans',sans-serif;color:var(--text-muted);font-size:11.5px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--green);color:#fff;border:none;
+    padding:13px 26px;border-radius:8px;font-size:14.5px;font-weight:700;
+    cursor:pointer;font-family:inherit;
+  }
+  .btn:hover{background:var(--green-dark);}
+  .btn:disabled{background:#B9C4CB;cursor:not-allowed;}
+  .btn-secondary{background:#fff;color:var(--blue);border:1px solid var(--border);}
+  .btn-secondary:hover{border-color:var(--blue);background:#F3F6F7;}
+
+  .export-status{margin-top:14px;font-size:13px;color:var(--text-muted);min-height:18px;}
+  .export-status.err{color:#B4291D;}
+  .export-status.ok{color:var(--green-dark);}
+
+  .toast{
+    position:fixed;bottom:24px;right:24px;
+    background:var(--blue);color:#fff;padding:13px 20px;border-radius:9px;
+    font-size:13.5px;box-shadow:0 8px 24px rgba(0,44,91,0.25);
+    display:flex;align-items:center;gap:10px;
+    transform:translateY(20px);opacity:0;pointer-events:none;
+    transition:transform .25s, opacity .25s;
+    z-index:100;
+  }
+  .toast.show{transform:translateY(0);opacity:1;}
+
+  @media (max-width:880px){
+    .app{grid-template-columns:1fr;}
+    nav.sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);}
+    main{padding:24px 16px 80px;}
+    section.card{padding:20px;}
+  }
+
+  .tb-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;font:600 12.5px 'DM Sans',sans-serif;padding:7px 12px;border-radius:7px;cursor:pointer}
+  .tb-btn:hover{background:rgba(255,255,255,.22)}
+  .tb-btn.primary{background:var(--green);border-color:var(--green)}
+  .tb-btn.dark{background:#fff;color:var(--blue);border-color:var(--border)}
+  .topbar-actions{flex-wrap:wrap}
+  .extra-methods{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:-8px 0 18px;font-size:13px}
+  .extra-methods label{display:flex;gap:6px;align-items:center;cursor:pointer}
+  .dyn-item{position:relative;border:1px solid var(--border);border-radius:8px;padding:12px 40px 12px 12px;margin-bottom:10px;background:#FBFCFD}
+  .dyn-item textarea,.dyn-item input{margin-top:6px}
+  .dyn-rm{position:absolute;top:8px;right:8px;border:none;background:none;font-size:20px;color:var(--text-muted);cursor:pointer}
+  .dyn-rm:hover{color:var(--orange)}
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,20,40,.55);z-index:50;align-items:center;justify-content:center;padding:20px}
+  .modal.show{display:flex}
+  .modal-box{background:#fff;border-radius:10px;max-width:680px;width:100%;max-height:85vh;overflow:auto;padding:20px 24px}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:var(--blue);font-size:17px}
+  .modal-head button{border:none;background:none;font-size:22px;cursor:pointer}
+  .lib-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+  .cl h4{margin:12px 0 4px;color:var(--blue)} .cl ul{margin:0;padding-left:18px;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">RV</div>
+      <div class="brand-text">
+        <h1>KAM Oorzaakanalyse</h1>
+        <p>Registratie &amp; documentatie voor Kwaliteit, Arbo, Milieu &amp; MVO</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="tb-btn" id="btnOpen" title="Onderzoek openen (.json)">Openen</button><button class="tb-btn primary" id="btnSave" title="Ctrl+S">Opslaan</button><button class="tb-btn" id="btnSaveAs">Opslaan als…</button><button class="tb-btn" id="btnLib">Onderzoeken</button><button class="tb-btn" id="btnVer">v03</button>
+      <span class="save-indicator"><span class="dot"></span><span id="saveIndicatorText">Automatisch opgeslagen</span></span>
+    </div>
+  </header>
+
+  <nav class="sidebar">
+    <ol id="sideNav">
+      <li><a href="#sectie-1" data-target="sectie-1"><span class="num">1</span>Basisgegevens</a></li>
+      <li><a href="#sectie-2" data-target="sectie-2"><span class="num">2</span>Bevinding</a></li>
+      <li><a href="#sectie-3" data-target="sectie-3"><span class="num">3</span>Oorzaakanalyse</a></li>
+      <li><a href="#sectie-4" data-target="sectie-4"><span class="num">4</span>Scope</a></li>
+      <li><a href="#sectie-5" data-target="sectie-5"><span class="num">5</span>Maatregelen</a></li>
+      <li><a href="#sectie-6" data-target="sectie-6"><span class="num">6</span>Aanvullende secties</a></li>
+      <li><a href="#sectie-7" data-target="sectie-7"><span class="num">7</span>Exporteren</a></li>
+    </ol>
+    <button class="reset-btn" id="resetBtn">Nieuw onderzoek starten</button>
+  </nav>
+
+  <main>
+
+    <!-- ================= SECTIE 1 ================= -->
+    <section class="card" id="sectie-1">
+      <h2><span class="badge">1</span>Basisgegevens</h2>
+      <p class="hint">Algemene gegevens over de melding. Bruikbaar voor elk KAM-facet: kwaliteit, arbo, milieu of MVO.</p>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Categorie</label>
+          <select id="f_categorie">
+            <option value="Kwaliteit">Kwaliteit</option>
+            <option value="Arbo">Arbo</option>
+            <option value="Milieu">Milieu</option>
+            <option value="MVO">MVO</option>
+            <option value="Overig">Overig</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Type melding</label>
+          <select id="f_type">
+            <option value="Non-conformiteit (NCR)">Non-conformiteit (NCR)</option>
+            <option value="Incident">Incident</option>
+            <option value="Bijna-ongeval">Bijna-ongeval</option>
+            <option value="Klacht">Klacht</option>
+            <option value="Audit-bevinding">Audit-bevinding</option>
+            <option value="Milieu-incident">Milieu-incident</option>
+            <option value="Risico-signalering">Risico-signalering</option>
+            <option value="Leveranciersafwijking">Leveranciersafwijking</option>
+            <option value="Afwijking externe audit/toezicht">Afwijking externe audit/toezicht</option>
+            <option value="Terugkerend probleem (trend)">Terugkerend probleem (trend)</option>
+            <option value="Overig">Overig, namelijk...</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Herkomst</label><select id="f_herkomst"><option value="Intern">Intern onderzoek</option><option value="Extern">Extern onderzoek</option></select></div>
+        <div class="field"><label>Betrokken partij <span class="sub">(bij extern)</span></label><input type="text" id="f_partij" placeholder="Klant, leverancier, toezichthouder..."></div>
+        <div class="field"><label>Status</label><select id="f_status"><option>Concept</option><option>In onderzoek</option><option>Maatregelen in uitvoering</option><option>Afgerond</option></select></div>
+      </div>
+      <div class="field" id="typeOverigWrap" style="display:none;">
+        <label>Type melding — omschrijving</label>
+        <input type="text" id="f_type_overig" placeholder="Omschrijf het type melding">
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Titel <span class="sub">(kort en herkenbaar)</span></label>
+          <input type="text" id="f_titel" placeholder="Bijv. Lekkage persleiding sorteerhal">
+        </div>
+        <div class="field">
+          <label>Registratienummer</label>
+          <input type="text" id="f_ncrnummer" placeholder="Bijv. NCR-2026-014, INC-2026-002, KL-2026-007">
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="field">
+          <label>Datum melding</label>
+          <input type="date" id="f_datum">
+        </div>
+        <div class="field">
+          <label>Melder</label>
+          <input type="text" id="f_melder" placeholder="Naam melder">
+        </div>
+        <div class="field">
+          <label>Betrokken proces / afdeling</label>
+          <input type="text" id="f_proces" placeholder="Bijv. Inzameling, Sortering, HR">
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SECTIE 2 ================= -->
+    <section class="card" id="sectie-2">
+      <h2><span class="badge">2</span>Beschrijving van de bevinding</h2>
+      <p class="hint">Beschrijf zo feitelijk mogelijk wat er is geconstateerd, ongeacht het KAM-onderwerp.</p>
+
+      <div class="field">
+        <label>Wat is er geconstateerd? <span class="sub">(wat, waar, wanneer, hoe ontdekt)</span></label>
+        <textarea id="f_beschrijving" rows="6" placeholder="Beschrijf de bevinding feitelijk: wat werd waargenomen, op welke locatie, op welk moment en hoe is dit ontdekt..."></textarea>
+      </div>
+    </section>
+
+    <!-- ================= SECTIE 3 ================= -->
+    <section class="card" id="sectie-3">
+      <h2><span class="badge">3</span>Oorzaakanalyse</h2>
+      <p class="hint">Kies één methode of gebruik beide om tot de grondoorzaak te komen.</p>
+
+      <div class="method-toggle">
+        <button type="button" data-method="5xwhy" class="active">5x Why</button>
+        <button type="button" data-method="ishikawa">Ishikawa (visgraat)</button>
+        <button type="button" data-method="beide">Beide methoden</button>
+      </div>
+
+      <div class="extra-methods"><span class="sub">Aanvullende methoden:</span>
+        <label><input type="checkbox" id="x_takken"> Meerdere oorzaaktakken</label>
+        <label><input type="checkbox" id="x_8d"> 8D-rapportage</label></div>
+      <!-- 5x WHY -->
+      <div class="method-block visible" id="block-5xwhy">
+        <div class="field">
+          <label>Probleemstelling</label>
+          <input type="text" id="f_why_probleem" placeholder="Het geconstateerde probleem in één zin">
+        </div>
+        <div id="whyRows"></div>
+        <button type="button" class="link-btn" id="addWhyBtn">+ Extra waarom-vraag toevoegen</button>
+      </div>
+
+      <!-- ISHIKAWA -->
+      <div class="method-block" id="block-ishikawa">
+        <div class="fishbone-wrap">
+          <svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg">
+            <line x1="80" y1="190" x2="760" y2="190" stroke="#002C5B" stroke-width="3"/>
+            <polygon points="760,175 800,190 760,205" fill="#002C5B"/>
+            <rect x="800" y="150" width="90" height="80" rx="8" fill="#E37222"/>
+            <text x="845" y="185" text-anchor="middle" fill="#fff" font-size="11" font-family="DM Sans, sans-serif" font-weight="700">EFFECT</text>
+            <text x="845" y="200" text-anchor="middle" fill="#fff" font-size="9.5" font-family="DM Sans, sans-serif">(bevinding)</text>
+
+            <!-- top bones -->
+            <line x1="180" y1="190" x2="240" y2="70" stroke="#71A810" stroke-width="2.5"/>
+            <line x1="360" y1="190" x2="420" y2="70" stroke="#71A810" stroke-width="2.5"/>
+            <line x1="540" y1="190" x2="600" y2="70" stroke="#71A810" stroke-width="2.5"/>
+            <!-- bottom bones -->
+            <line x1="180" y1="190" x2="240" y2="310" stroke="#0F4C81" stroke-width="2.5"/>
+            <line x1="360" y1="190" x2="420" y2="310" stroke="#0F4C81" stroke-width="2.5"/>
+            <line x1="540" y1="190" x2="600" y2="310" stroke="#0F4C81" stroke-width="2.5"/>
+
+            <text x="245" y="60" text-anchor="middle" fill="#5C8A0C" font-size="13" font-family="DM Sans, sans-serif" font-weight="700">Mens</text>
+            <text x="425" y="60" text-anchor="middle" fill="#5C8A0C" font-size="13" font-family="DM Sans, sans-serif" font-weight="700">Methode</text>
+            <text x="605" y="60" text-anchor="middle" fill="#5C8A0C" font-size="13" font-family="DM Sans, sans-serif" font-weight="700">Milieu</text>
+
+            <text x="245" y="330" text-anchor="middle" fill="#0F4C81" font-size="13" font-family="DM Sans, sans-serif" font-weight="700">Machine</text>
+            <text x="425" y="330" text-anchor="middle" fill="#0F4C81" font-size="13" font-family="DM Sans, sans-serif" font-weight="700">Materiaal</text>
+            <text x="605" y="330" text-anchor="middle" fill="#0F4C81" font-size="13" font-family="DM Sans, sans-serif" font-weight="700">Meting</text>
+
+            <line x1="30" y1="190" x2="80" y2="175" stroke="#002C5B" stroke-width="3"/>
+            <line x1="30" y1="190" x2="80" y2="205" stroke="#002C5B" stroke-width="3"/>
+          </svg>
+        </div>
+
+        <div class="ishikawa-grid">
+          <div class="field ishikawa-cat"><label><span class="swatch" style="background:#71A810"></span>Mens</label><textarea id="ishi_mens" placeholder="Eén oorzaak per regel"></textarea></div>
+          <div class="field ishikawa-cat"><label><span class="swatch" style="background:#0F4C81"></span>Machine</label><textarea id="ishi_machine" placeholder="Eén oorzaak per regel"></textarea></div>
+          <div class="field ishikawa-cat"><label><span class="swatch" style="background:#71A810"></span>Methode</label><textarea id="ishi_methode" placeholder="Eén oorzaak per regel"></textarea></div>
+          <div class="field ishikawa-cat"><label><span class="swatch" style="background:#0F4C81"></span>Materiaal</label><textarea id="ishi_materiaal" placeholder="Eén oorzaak per regel"></textarea></div>
+          <div class="field ishikawa-cat"><label><span class="swatch" style="background:#71A810"></span>Milieu</label><textarea id="ishi_milieu" placeholder="Eén oorzaak per regel"></textarea></div>
+          <div class="field ishikawa-cat"><label><span class="swatch" style="background:#0F4C81"></span>Meting</label><textarea id="ishi_meting" placeholder="Eén oorzaak per regel"></textarea></div>
+        </div>
+        <div id="ishiExtra" style="margin-top:12px"></div><button type="button" class="link-btn" id="addIshiBtn">+ Eigen categorie toevoegen</button>
+      </div>
+
+      <div class="rootcause-box">
+        <div class="method-block" id="block-takken"><p class="hint" style="margin-left:0">Werk elke oorzaaktak uit als een eigen waarom-keten en benoem per tak de grondoorzaak.</p><div id="takList"></div><button type="button" class="link-btn" id="addTakBtn">+ Oorzaaktak toevoegen</button></div>
+      <div class="method-block" id="block-8d"><div class="field"><label>D1 — Team samenstellen</label><textarea id="d8_1" rows="3"></textarea></div><div class="field"><label>D2 — Probleem beschrijven</label><textarea id="d8_2" rows="3"></textarea></div><div class="field"><label>D3 — Tussentijdse (inperkende) maatregelen</label><textarea id="d8_3" rows="3"></textarea></div><div class="field"><label>D4 — Grondoorzaak vaststellen</label><textarea id="d8_4" rows="3"></textarea></div><div class="field"><label>D5 — Permanente corrigerende maatregelen kiezen</label><textarea id="d8_5" rows="3"></textarea></div><div class="field"><label>D6 — Corrigerende maatregelen implementeren en valideren</label><textarea id="d8_6" rows="3"></textarea></div><div class="field"><label>D7 — Herhaling voorkomen (borging)</label><textarea id="d8_7" rows="3"></textarea></div><div class="field"><label>D8 — Team erkennen en onderzoek afsluiten</label><textarea id="d8_8" rows="3"></textarea></div></div>
+      <div class="field" style="margin-bottom:0;">
+          <label>Geïdentificeerde grondoorzaak <span class="sub">(conclusie van de analyse)</span></label>
+          <textarea id="f_grondoorzaak" rows="3" placeholder="Wat is de onderliggende grondoorzaak van de afwijking?"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SECTIE 4 ================= -->
+    <section class="card" id="sectie-4">
+      <h2><span class="badge">4</span>Scope / omvang vaststellen</h2>
+      <p class="hint">Gebruik onderstaande hulpvragen om de omvang systematisch te bepalen, en vul eventueel aan met vrije tekst.</p>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Getroffen locatie(s)</label>
+          <input type="text" id="s_locaties" placeholder="Bijv. sorteerhal, wagenpark">
+        </div>
+        <div class="field">
+          <label>Getroffen proces(sen)</label>
+          <input type="text" id="s_processen" placeholder="Bijv. sortering, transport">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Getroffen product(en) / dienst(en)</label>
+          <input type="text" id="s_producten" placeholder="Bijv. PMD-stroom">
+        </div>
+        <div class="field">
+          <label>Periode / tijdspanne</label>
+          <input type="text" id="s_periode" placeholder="Bijv. 03-08-2026 t/m 10-08-2026">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Aantal betrokken eenheden / gevallen</label>
+          <input type="text" id="s_aantal" placeholder="Bijv. 12 ritten, 3 medewerkers">
+        </div>
+        <div class="field">
+          <label>Ernst / impact inschatting</label>
+          <div class="impact-select">
+            <label><input type="radio" name="s_impact" value="Laag" id="imp_laag"><span>Laag</span></label>
+            <label><input type="radio" name="s_impact" value="Midden" id="imp_midden"><span>Midden</span></label>
+            <label><input type="radio" name="s_impact" value="Hoog" id="imp_hoog"><span>Hoog</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Aanvullende toelichting <span class="sub">(vrije tekst)</span></label>
+        <textarea id="s_vrijetekst" rows="4" placeholder="Ruimte voor aanvullende beschrijving van de scope die niet in bovenstaande velden past..."></textarea>
+      </div>
+    </section>
+
+    <!-- ================= SECTIE 5 ================= -->
+    <section class="card" id="sectie-5">
+      <h2><span class="badge">5</span>Maatregelenoverzicht</h2>
+      <p class="hint">Te nemen maatregelen, inclusief verantwoordelijke en einddatum of periode.</p>
+
+      <table class="measures">
+        <colgroup><col class="col-m"><col class="col-v"><col class="col-d"><col class="col-rm"></colgroup>
+        <thead>
+          <tr><th>Maatregel</th><th>Verantwoordelijke</th><th>Einddatum / periode</th><th></th></tr>
+        </thead>
+        <tbody id="measuresBody"></tbody>
+      </table>
+      <button type="button" class="link-btn" id="addMeasureBtn">+ Maatregel toevoegen</button>
+    </section>
+
+    <!-- ================= SECTIE 6 ================= -->
+    <section class="card" id="sectie-6">
+      <h2><span class="badge">6</span>Aanvullende secties</h2>
+      <p class="hint">Voeg eigen secties toe die passen bij dit onderzoek (bijv. Klantcommunicatie, Leveranciersreactie, Tijdlijn). Ze worden meegenomen in de export.</p>
+      <div id="vrijList"></div><button type="button" class="link-btn" id="addVrijBtn">+ Sectie toevoegen</button>
+    </section>
+
+    <section class="card" id="sectie-7">
+      <h2><span class="badge">7</span>Exporteren</h2>
+      <p class="hint">Kies één of beide bestandstypen. Je kiest per bestand zelf de opslaglocatie.</p>
+
+      <div class="export-options">
+        <label class="check-tile active" id="tileDocx">
+          <input type="checkbox" id="exp_docx" checked>
+          <div class="ct-icon">DOC</div>
+          <div class="ct-text"><b>Word (.docx)</b><span>Bewerkbaar rapport</span></div>
+        </label>
+        <label class="check-tile active" id="tilePdf">
+          <input type="checkbox" id="exp_pdf" checked>
+          <div class="ct-icon">PDF</div>
+          <div class="ct-text"><b>PDF (.pdf)</b><span>Vast, deelbaar formaat</span></div>
+        </label>
+      </div>
+
+      <div class="filename-preview">
+        <span class="lbl">Bestandsnaam (per gekozen type)</span>
+        <span id="filenamePreview">20260101_documenttitel</span>
+      </div>
+
+      <button class="btn" id="exportBtn">Exporteren</button>
+      <div class="export-status" id="exportStatus"></div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><b id="modalTitle"></b><button id="modalClose">&times;</button></div><div id="modalBody"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =========================================================
+     STATE / CONSTANTS
+  ========================================================= */
+  const STORAGE_KEY = "ncr_oorzaakanalyse_draft_v1";
+  const $ = (id) => document.getElementById(id);
+
+  const simpleFieldIds = [
+    "f_categorie","f_type","f_type_overig",
+    "f_titel","f_ncrnummer","f_datum","f_melder","f_proces",
+    "f_beschrijving",
+    "f_why_probleem","f_grondoorzaak",
+    "ishi_mens","ishi_machine","ishi_methode","ishi_materiaal","ishi_milieu","ishi_meting",
+    "s_locaties","s_processen","s_producten","s_periode","s_aantal","s_vrijetekst",
+    "f_herkomst","f_partij","f_status","d8_1","d8_2","d8_3","d8_4","d8_5","d8_6","d8_7","d8_8"
+  ];
+
+  /* =========================================================
+     INIT DEFAULT DATE
+  ========================================================= */
+  (function initDate(){
+    if (!$("f_datum").value) {
+      const d = new Date();
+      $("f_datum").value = d.toISOString().slice(0,10);
+    }
+  })();
+
+  /* =========================================================
+     TYPE MELDING — toon vrij tekstveld bij "Overig"
+  ========================================================= */
+  function syncTypeOverig(){
+    $("typeOverigWrap").style.display = $("f_type").value.indexOf("Overig") === 0 ? "block" : "none";
+  }
+  $("f_type").addEventListener("change", function(){ syncTypeOverig(); scheduleSave(); });
+
+  /* =========================================================
+     5x WHY ROWS
+  ========================================================= */
+  let whyCount = 0;
+  function addWhyRow(value){
+    whyCount++;
+    const wrap = document.createElement("div");
+    if (whyCount > 1) {
+      const connector = document.createElement("div");
+      connector.className = "why-connector";
+      connector.innerHTML = "&#8595;";
+      $("whyRows").appendChild(connector);
+    }
+    const row = document.createElement("div");
+    row.className = "why-row";
+    row.dataset.whyIndex = whyCount;
+    row.innerHTML =
+      '<div class="why-num">W' + whyCount + '</div>' +
+      '<input type="text" class="why-input" placeholder="Waarom (' + whyCount + ')?" value="' + (value ? escapeAttr(value) : '') + '">' +
+      (whyCount > 5 ? '<button type="button" class="why-remove" title="Verwijderen">&times;</button>' : '<span style="width:34px;"></span>');
+    $("whyRows").appendChild(row);
+
+    const removeBtn = row.querySelector(".why-remove");
+    if (removeBtn) {
+      removeBtn.addEventListener("click", function(){
+        row.previousElementSibling && row.previousElementSibling.classList.contains("why-connector") && row.previousElementSibling.remove();
+        row.remove();
+        renumberWhy();
+        scheduleSave();
+      });
+    }
+    row.querySelector(".why-input").addEventListener("input", scheduleSave);
+  }
+  function renumberWhy(){
+    const rows = document.querySelectorAll(".why-row");
+    whyCount = rows.length;
+    rows.forEach((row, i) => {
+      row.querySelector(".why-num").textContent = "W" + (i+1);
+      row.querySelector(".why-input").placeholder = "Waarom (" + (i+1) + ")?";
+    });
+  }
+  $("addWhyBtn").addEventListener("click", function(){ addWhyRow(); scheduleSave(); });
+
+  function getWhyValues(){
+    return Array.from(document.querySelectorAll(".why-input")).map(i => i.value.trim());
+  }
+  function setWhyValues(values){
+    $("whyRows").innerHTML = "";
+    whyCount = 0;
+    (values && values.length ? values : ["","","","",""]).forEach(v => addWhyRow(v));
+  }
+
+  /* =========================================================
+     METHOD TOGGLE (5x Why / Ishikawa / Beide)
+  ========================================================= */
+  let currentMethod = "5xwhy";
+  document.querySelectorAll(".method-toggle button").forEach(btn => {
+    btn.addEventListener("click", function(){
+      currentMethod = btn.dataset.method;
+      document.querySelectorAll(".method-toggle button").forEach(b => b.classList.toggle("active", b === btn));
+      const showWhy = currentMethod === "5xwhy" || currentMethod === "beide";
+      const showIshi = currentMethod === "ishikawa" || currentMethod === "beide";
+      $("block-5xwhy").classList.toggle("visible", showWhy);
+      $("block-ishikawa").classList.toggle("visible", showIshi);
+      scheduleSave();
+    });
+  });
+
+  /* =========================================================
+     MAATREGELEN TABLE
+  ========================================================= */
+  function addMeasureRow(m, v, d){
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><textarea rows="1" class="meas-m" placeholder="Te nemen maatregel">' + (m ? escapeHtml(m) : '') + '</textarea></td>' +
+      '<td><input type="text" class="meas-v" placeholder="Naam" value="' + (v ? escapeAttr(v) : '') + '"></td>' +
+      '<td><input type="text" class="meas-d" placeholder="bijv. Q4 2026" value="' + (d ? escapeAttr(d) : '') + '"></td>' +
+      '<td class="rm"><button type="button" title="Rij verwijderen">&times;</button></td>';
+    $("measuresBody").appendChild(tr);
+    tr.querySelector("button").addEventListener("click", function(){
+      if ($("measuresBody").children.length > 1) {
+        tr.remove();
+      } else {
+        tr.querySelectorAll("input, textarea").forEach(el => el.value = "");
+      }
+      scheduleSave();
+    });
+    tr.querySelectorAll("input, textarea").forEach(el => el.addEventListener("input", scheduleSave));
+  }
+  $("addMeasureBtn").addEventListener("click", function(){ addMeasureRow(); scheduleSave(); });
+
+  function getMeasures(){
+    const rows = Array.from($("measuresBody").querySelectorAll("tr"));
+    return rows.map(tr => ({
+      maatregel: tr.querySelector(".meas-m").value.trim(),
+      verantwoordelijke: tr.querySelector(".meas-v").value.trim(),
+      datum: tr.querySelector(".meas-d").value.trim()
+    })).filter(r => r.maatregel || r.verantwoordelijke || r.datum);
+  }
+  function setMeasures(list){
+    $("measuresBody").innerHTML = "";
+    if (list && list.length) {
+      list.forEach(r => addMeasureRow(r.maatregel, r.verantwoordelijke, r.datum));
+    } else {
+      addMeasureRow();
+    }
+  }
+
+  /* =========================================================
+     SCOPE IMPACT (radio) tile styling
+  ========================================================= */
+  document.querySelectorAll('input[name="s_impact"]').forEach(r => {
+    r.addEventListener("change", function(){
+      document.querySelectorAll(".impact-select label").forEach(l => l.style.background = "");
+      scheduleSave();
+    });
+  });
+
+  /* =========================================================
+     EXPORT CHECKBOX TILES
+  ========================================================= */
+  function syncTile(checkboxId, tileId){
+    const cb = $(checkboxId), tile = $(tileId);
+    tile.classList.toggle("active", cb.checked);
+  }
+  $("exp_docx").addEventListener("change", () => { syncTile("exp_docx","tileDocx"); syncExportBtn(); });
+  $("exp_pdf").addEventListener("change", () => { syncTile("exp_pdf","tilePdf"); syncExportBtn(); });
+  function syncExportBtn(){
+    const any = $("exp_docx").checked || $("exp_pdf").checked;
+    $("exportBtn").disabled = !any;
+  }
+
+  /* =========================================================
+     FILENAME
+  ========================================================= */
+  function slugify(text){
+    return (text || "documenttitel")
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-z0-9]+/g,"_")
+      .replace(/^_+|_+$/g,"")
+      .slice(0,60) || "documenttitel";
+  }
+  function getBaseFilename(){
+    const dateVal = $("f_datum").value;
+    let yyyymmdd;
+    if (dateVal) {
+      yyyymmdd = dateVal.replace(/-/g,"");
+    } else {
+      const d = new Date();
+      yyyymmdd = d.toISOString().slice(0,10).replace(/-/g,"");
+    }
+    return yyyymmdd + "_" + slugify($("f_titel").value);
+  }
+  function updateFilenamePreview(){
+    $("filenamePreview").textContent = getBaseFilename();
+  }
+  ["f_titel","f_datum"].forEach(id => $(id).addEventListener("input", updateFilenamePreview));
+
+  /* =========================================================
+     HELPERS
+  ========================================================= */
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+  function linesToArray(text){
+    return (text || "").split("\n").map(s => s.trim()).filter(Boolean);
+  }
+  function niceDate(dateVal){
+    if (!dateVal) return "-";
+    const [y,m,d] = dateVal.split("-");
+    return d + "-" + m + "-" + y;
+  }
+
+  /* =========================================================
+     GATHER FORM DATA
+  ========================================================= */
+  function gatherData(){
+    return {
+      categorie: $("f_categorie").value,
+      type: $("f_type").value.indexOf("Overig") === 0 && $("f_type_overig").value.trim()
+        ? $("f_type_overig").value.trim()
+        : $("f_type").value,
+      titel: $("f_titel").value.trim() || "(geen titel ingevuld)",
+      ncrnummer: $("f_ncrnummer").value.trim(),
+      datum: $("f_datum").value,
+      melder: $("f_melder").value.trim(),
+      proces: $("f_proces").value.trim(),
+      beschrijving: $("f_beschrijving").value.trim(),
+      methode: currentMethod,
+      whyProbleem: $("f_why_probleem").value.trim(),
+      whyValues: getWhyValues(),
+      ishikawa: {
+        mens: linesToArray($("ishi_mens").value),
+        machine: linesToArray($("ishi_machine").value),
+        methode: linesToArray($("ishi_methode").value),
+        materiaal: linesToArray($("ishi_materiaal").value),
+        milieu: linesToArray($("ishi_milieu").value),
+        meting: linesToArray($("ishi_meting").value)
+      },
+      grondoorzaak: $("f_grondoorzaak").value.trim(),
+      scope: {
+        locaties: $("s_locaties").value.trim(),
+        processen: $("s_processen").value.trim(),
+        producten: $("s_producten").value.trim(),
+        periode: $("s_periode").value.trim(),
+        aantal: $("s_aantal").value.trim(),
+        impact: (document.querySelector('input[name="s_impact"]:checked') || {}).value || "",
+        vrijetekst: $("s_vrijetekst").value.trim()
+      },
+      maatregelen: getMeasures(),
+      herkomst: $("f_herkomst").value, partij: $("f_partij").value.trim(), status: $("f_status").value, rev: meta.rev,
+      xTakken: $("x_takken").checked, x8d: $("x_8d").checked,
+      takken: readDyn("takList",["t_n","t_k","t_g"]).filter(t=>t.t_n||t.t_k||t.t_g),
+      d8: D8.map((_,i)=>$("d8_"+(i+1)).value.trim()),
+      ishiExtra: readDyn("ishiExtra",["i_n","i_t"]).filter(c=>c.i_n||c.i_t).map(c=>({naam:c.i_n||"(categorie)",items:linesToArray(c.i_t)})),
+      vrij: readDyn("vrijList",["v_t","v_x"]).filter(v=>v.v_t||v.v_x)
+    };
+  }
+
+  /* =========================================================
+     LOCALSTORAGE — AUTOSAVE / RESTORE
+  ========================================================= */
+  const TOOL_VERSION = "v03";
+  const CHANGELOG = [
+    ["v03 — 21-09-2026", ["Opslaan als .json-bestand (Opslaan, Opslaan als, Openen) met controle na schrijven en waarschuwing bij tussentijdse wijziging door een collega","Automatische lokale bewaring per onderzoek en overzicht 'Onderzoeken' (meerdere onderzoeken naast elkaar)","Revisienummer en wijzigingslog per onderzoek (revisie, tijdstip, naam, toolversie)","Herkomst intern/extern, betrokken partij, status en extra onderzoekstypen","Nieuwe methoden: meerdere oorzaaktakken en 8D-rapportage","Eigen Ishikawa-categorieën en vrije aanvullende secties","Export (docx/pdf) uitgebreid met hoofdstuk 6 Aanvullende onderdelen en eigen Ishikawa-categorieën","Versiebeheer in de tool zelf (deze lijst)"]],
+    ["v02 — basisversie", ["5x Why, Ishikawa (6M), scope, maatregelenoverzicht, export naar Word en PDF, lokaal concept"]]
+  ];
+  const D8 = ["D1 — Team samenstellen", "D2 — Probleem beschrijven", "D3 — Tussentijdse (inperkende) maatregelen", "D4 — Grondoorzaak vaststellen", "D5 — Permanente corrigerende maatregelen kiezen", "D6 — Corrigerende maatregelen implementeren en valideren", "D7 — Herhaling voorkomen (borging)", "D8 — Team erkennen en onderzoek afsluiten"];
+  const LIB_KEY = "kam_oa_library_v3", CUR_KEY = "kam_oa_current_v3", USER_KEY = "kam_oa_user";
+  const uid = () => "OA-" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const newMeta = () => ({ id: uid(), created: new Date().toISOString(), rev: 0, log: [] });
+  let meta = newMeta(), dirty = false, loading = false, fileHandle = null, fileName = "", fileMod = 0;
+  const FT = [{ description:"Oorzaakanalyse (JSON)", accept:{ "application/json":[".json"] } }];
+
+  /* ---- dynamische lijsten ---- */
+  function dyn(cid, tpl, vals){
+    const d = document.createElement("div"); d.className = "dyn-item";
+    d.innerHTML = tpl + '<button type="button" class="dyn-rm" title="Verwijderen">&times;</button>';
+    $(cid).appendChild(d);
+    Object.keys(vals||{}).forEach(k => { const e = d.querySelector("."+k); if (e) e.value = vals[k]; });
+    d.querySelector(".dyn-rm").onclick = () => { d.remove(); scheduleSave(); };
+  }
+  function readDyn(cid, keys){
+    return Array.from($(cid).children).map(d => { const o = {}; keys.forEach(k => o[k] = d.querySelector("."+k).value.trim()); return o; });
+  }
+  const addTak = v => dyn("takList",'<input type="text" class="t_n" placeholder="Naam oorzaaktak (bijv. Instructie onduidelijk)"><textarea class="t_k" rows="4" placeholder="Waarom-keten: één waarom per regel"></textarea><textarea class="t_g" rows="2" placeholder="Grondoorzaak van deze tak"></textarea>', v);
+  const addIshi = v => dyn("ishiExtra",'<input type="text" class="i_n" placeholder="Naam categorie (bijv. Management, Wet- en regelgeving)"><textarea class="i_t" rows="3" placeholder="Eén oorzaak per regel"></textarea>', v);
+  const addVrij = v => dyn("vrijList",'<input type="text" class="v_t" placeholder="Titel sectie"><textarea class="v_x" rows="4"></textarea>', v);
+  $("addTakBtn").onclick = () => { addTak(); scheduleSave(); };
+  $("addIshiBtn").onclick = () => { addIshi(); scheduleSave(); };
+  $("addVrijBtn").onclick = () => { addVrij(); scheduleSave(); };
+  function syncExtra(){
+    $("block-takken").classList.toggle("visible", $("x_takken").checked);
+    $("block-8d").classList.toggle("visible", $("x_8d").checked);
+  }
+  $("x_takken").addEventListener("change", syncExtra); $("x_8d").addEventListener("change", syncExtra);
+
+  function extraSections(data){
+    const B = [{ label:"Onderzoekskenmerken", lines:["Herkomst: " + (data.herkomst||"-"), "Betrokken partij: " + (data.partij||"-"), "Status: " + (data.status||"-"), "Revisie: " + data.rev] }];
+    if (data.xTakken) data.takken.forEach(t => {
+      const l = linesToArray(t.t_k).map((x,i) => "Waarom " + (i+1) + ": " + x);
+      if (t.t_g) l.push("Grondoorzaak van deze tak: " + t.t_g);
+      B.push({ label:"Oorzaaktak: " + (t.t_n || "(zonder naam)"), lines: l.length ? l : ["-"] });
+    });
+    if (data.x8d) D8.forEach((n,i) => { if (data.d8[i]) B.push({ label:n, lines:[data.d8[i]] }); });
+    data.vrij.forEach(v => B.push({ label: v.v_t || "Aanvullende sectie", lines:[v.v_x || "-"] }));
+    return B;
+  }
+
+  /* ---- staat verzamelen / toepassen ---- */
+  function collectState(){
+    const s = { format:"KAM-Oorzaakanalyse", schema:3, toolVersion:TOOL_VERSION, id:meta.id, created:meta.created, updated:new Date().toISOString(),
+      rev:meta.rev, log:meta.log, simple:{}, method:currentMethod, why:getWhyValues(), measures:getMeasures(),
+      impact:(document.querySelector('input[name="s_impact"]:checked')||{}).value || "",
+      xTakken:$("x_takken").checked, x8d:$("x_8d").checked,
+      takken:readDyn("takList",["t_n","t_k","t_g"]), ishiExtra:readDyn("ishiExtra",["i_n","i_t"]), vrij:readDyn("vrijList",["v_t","v_x"]) };
+    simpleFieldIds.forEach(id => s.simple[id] = $(id).value);
+    return s;
+  }
+  function withLoad(fn){ loading = true; try{ fn(); } finally{ loading = false; } }
+  function clearForm(){
+    simpleFieldIds.forEach(id => { const e = $(id); if (e.tagName === "SELECT") e.selectedIndex = 0; else e.value = ""; });
+    $("f_datum").value = new Date().toISOString().slice(0,10);
+    setWhyValues([]); setMeasures([]);
+    document.querySelectorAll('input[name="s_impact"]').forEach(r => r.checked = false);
+    ["takList","ishiExtra","vrijList"].forEach(c => $(c).innerHTML = "");
+    $("x_takken").checked = false; $("x_8d").checked = false; syncExtra();
+    document.querySelector('.method-toggle button[data-method="5xwhy"]').click();
+    syncTypeOverig(); updateFilenamePreview();
+  }
+  function applyState(s){
+    clearForm();
+    meta = { id:s.id || uid(), created:s.created || new Date().toISOString(), rev:s.rev || 0, log:s.log || [] };
+    if (s.simple) simpleFieldIds.forEach(id => { if (s.simple[id] !== undefined) $(id).value = s.simple[id]; });
+    setWhyValues(s.why && s.why.length ? s.why : []); setMeasures(s.measures);
+    if (s.impact){ const el = document.querySelector('input[name="s_impact"][value="' + s.impact + '"]'); if (el) el.checked = true; }
+    $("x_takken").checked = !!s.xTakken; $("x_8d").checked = !!s.x8d; syncExtra();
+    (s.takken||[]).forEach(addTak); (s.ishiExtra||[]).forEach(addIshi); (s.vrij||[]).forEach(addVrij);
+    const btn = document.querySelector('.method-toggle button[data-method="' + (s.method || "5xwhy") + '"]'); if (btn) btn.click();
+    syncTypeOverig(); updateFilenamePreview();
+  }
+
+  /* ---- lokale bewaring (bibliotheek) ---- */
+  function libGet(){ try{ return JSON.parse(localStorage.getItem(LIB_KEY) || "{}"); }catch(e){ return {}; } }
+  function persist(){
+    const st = collectState();
+    localStorage.setItem(CUR_KEY, st.id);
+    if (st.simple.f_titel || st.simple.f_beschrijving){
+      const l = libGet();
+      l[st.id] = { id:st.id, titel:st.simple.f_titel, nr:st.simple.f_ncrnummer, herkomst:st.simple.f_herkomst, status:st.simple.f_status, updated:st.updated, state:st };
+      localStorage.setItem(LIB_KEY, JSON.stringify(l));
+    }
+  }
+  function setInd(msg){
+    $("saveIndicatorText").textContent = msg || (dirty ? (fileName ? "Wijzigingen nog niet in bestand" : "Lokaal bewaard · nog niet als bestand opgeslagen") : (fileName ? "Opgeslagen in " + fileName : "Nieuw onderzoek · wordt lokaal bewaard"));
+  }
+  let saveTimer = null;
+  function scheduleSave(){
+    if (loading) return;
+    clearTimeout(saveTimer); $("saveIndicatorText").textContent = "Opslaan...";
+    saveTimer = setTimeout(saveDraft, 500);
+  }
+  function saveDraft(){
+    try{ persist(); dirty = true; setInd(); }
+    catch(e){ setInd("Lokaal bewaren mislukt — sla op als bestand"); }
+    updateFilenamePreview();
+  }
+  function restoreDraft(){
+    let st = null;
+    try{
+      const cur = localStorage.getItem(CUR_KEY), l = libGet();
+      if (cur){ if (l[cur]) st = l[cur].state; }
+      else { const raw = localStorage.getItem(STORAGE_KEY); if (raw) st = JSON.parse(raw); }
+    }catch(e){}
+    withLoad(() => { if (st) applyState(st); else clearForm(); });
+    try{ persist(); }catch(e){}
+    setInd();
+  }
+
+  document.addEventListener("input", function(e){
+    if (e.target.closest("main")) scheduleSave();
+  });
+
+  /* ---- bestand opslaan / openen ---- */
+  function getUser(){
+    let u = ""; try{ u = localStorage.getItem(USER_KEY) || ""; }catch(e){}
+    if (!u){ u = (prompt("Uw naam (voor de wijzigingslog van dit onderzoek):", "") || "").trim(); try{ if (u) localStorage.setItem(USER_KEY, u); }catch(e){} }
+    return u || "onbekend";
+  }
+  async function saveToFile(asNew){
+    const user = getUser();
+    meta.rev += 1; meta.log.push({ rev:meta.rev, ts:new Date().toISOString(), door:user, tool:TOOL_VERSION });
+    const blob = new Blob([JSON.stringify(collectState(), null, 2)], { type:"application/json" });
+    try{
+      if (window.showSaveFilePicker){
+        if (asNew || !fileHandle){ fileHandle = await window.showSaveFilePicker({ suggestedName:getBaseFilename() + ".json", types:FT }); }
+        else {
+          const f = await fileHandle.getFile();
+          if (f.lastModified > fileMod && !confirm("Het bestand is gewijzigd sinds u het opende (bijvoorbeeld door een collega). Toch overschrijven?")) throw new Error("cancel");
+        }
+        const w = await fileHandle.createWritable(); await w.write(blob); await w.close();
+        const f2 = await fileHandle.getFile();
+        if (f2.size !== blob.size) throw new Error("controle na opslaan mislukt, probeer 'Opslaan als…'");
+        fileMod = f2.lastModified; fileName = fileHandle.name;
+      } else {
+        fileName = getBaseFilename() + ".json";
+        const url = URL.createObjectURL(blob), a = document.createElement("a");
+        a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      }
+      persist(); dirty = false; setInd(); showToast("Onderzoek opgeslagen (revisie " + meta.rev + ").");
+    }catch(e){
+      meta.rev -= 1; meta.log.pop();
+      if (e && (e.name === "AbortError" || e.message === "cancel")) return;
+      showToast("Opslaan mislukt: " + (e && e.message ? e.message : e));
+    }
+  }
+  function pickViaInput(){
+    return new Promise((res, rej) => {
+      const i = document.createElement("input"); i.type = "file"; i.accept = ".json,application/json";
+      i.onchange = () => { const f = i.files[0]; if (!f) return rej({ name:"AbortError" }); fileName = f.name; f.text().then(res, rej); };
+      i.click();
+    });
+  }
+  async function openFile(){
+    if (dirty && !confirm("Er zijn wijzigingen die nog niet in een bestand zijn opgeslagen. Toch een ander onderzoek openen?")) return;
+    try{
+      let text, handle = null, mod = 0;
+      if (window.showOpenFilePicker){
+        const [h] = await window.showOpenFilePicker({ types:FT }); const f = await h.getFile();
+        text = await f.text(); handle = h; mod = f.lastModified; fileName = f.name;
+      } else { text = await pickViaInput(); }
+      const st = JSON.parse(text);
+      if (st.format !== "KAM-Oorzaakanalyse") throw new Error("geen geldig onderzoeksbestand");
+      if (st.schema > 3) alert("Dit bestand is gemaakt met een nieuwere toolversie (" + st.toolVersion + "). Niet alle gegevens worden mogelijk getoond.");
+      withLoad(() => applyState(st));
+      fileHandle = handle; fileMod = mod; persist(); dirty = false; setInd(); showToast("Onderzoek geopend.");
+    }catch(e){ if (!(e && e.name === "AbortError")) showToast("Openen mislukt: " + (e && e.message ? e.message : e)); }
+  }
+  $("btnSave").onclick = () => saveToFile(false);
+  $("btnSaveAs").onclick = () => saveToFile(true);
+  $("btnOpen").onclick = openFile;
+  document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s"){ e.preventDefault(); saveToFile(e.shiftKey); } });
+  window.addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+  /* ---- modals: bibliotheek en versie ---- */
+  function openModal(t, h){ $("modalTitle").textContent = t; $("modalBody").innerHTML = h; $("modal").classList.add("show"); }
+  $("modalClose").onclick = () => $("modal").classList.remove("show");
+  $("modal").addEventListener("click", e => { if (e.target.id === "modal") $("modal").classList.remove("show"); });
+  function showLib(){
+    const l = Object.values(libGet()).sort((a,b) => (b.updated||"").localeCompare(a.updated||""));
+    openModal("Onderzoeken (lokaal in deze browser)", (l.length ? l.map(x => '<div class="lib-row"><div><b>' + escapeHtml(x.titel || "(zonder titel)") + '</b><br><span class="sub">' + escapeHtml([x.nr, x.herkomst, x.status, (x.updated||"").slice(0,16).replace("T"," ")].filter(Boolean).join(" · ")) + '</span></div><div><button class="tb-btn dark" data-a="open" data-id="' + x.id + '">Openen</button> <button class="tb-btn dark" data-a="del" data-id="' + x.id + '">Verwijderen</button></div></div>').join("") : "<p>Nog geen onderzoeken bewaard.</p>") + '<p class="sub">Deze lijst staat alleen in deze browser. Gebruik Opslaan om een .json-bestand te maken voor delen of archivering.</p>');
+  }
+  $("modalBody").onclick = e => {
+    const b = e.target.closest("button[data-a]"); if (!b) return;
+    const l = libGet(), id = b.dataset.id;
+    if (b.dataset.a === "del"){ if (confirm("Dit lokaal bewaarde onderzoek verwijderen? Bestanden op schijf blijven ongewijzigd.")){ delete l[id]; localStorage.setItem(LIB_KEY, JSON.stringify(l)); showLib(); } }
+    else if (l[id]){
+      if (dirty && !confirm("Er zijn wijzigingen die nog niet in een bestand zijn opgeslagen. Toch openen?")) return;
+      withLoad(() => applyState(l[id].state)); fileHandle = null; fileName = ""; fileMod = 0; persist(); dirty = false; setInd();
+      $("modal").classList.remove("show");
+    }
+  };
+  $("btnLib").onclick = showLib;
+  $("btnVer").onclick = () => openModal("Versiebeheer — KAM Oorzaakanalyse " + TOOL_VERSION,
+    '<div class="cl">' + CHANGELOG.map(c => "<h4>" + escapeHtml(c[0]) + "</h4><ul>" + c[1].map(x => "<li>" + escapeHtml(x) + "</li>").join("") + "</ul>").join("") + "</div>");
+
+  $("resetBtn").addEventListener("click", function(){
+    if (!confirm("Nieuw onderzoek starten? Het huidige onderzoek blijft lokaal bewaard onder 'Onderzoeken'. Sla het eerst op als bestand als u het wilt delen.")) return;
+    withLoad(() => { meta = newMeta(); clearForm(); });
+    fileHandle = null; fileName = ""; fileMod = 0; dirty = false;
+    try{ localStorage.setItem(CUR_KEY, meta.id); }catch(e){}
+    setInd(); showToast("Nieuw onderzoek gestart.");
+  });
+
+  /* =========================================================
+     SIDEBAR NAV — active state on scroll
+  ========================================================= */
+  const navLinks = Array.from(document.querySelectorAll("nav.sidebar a"));
+  const sections = navLinks.map(a => document.getElementById(a.dataset.target));
+  function setActiveNav(){
+    let idx = 0;
+    const scrollPos = window.scrollY + 140;
+    sections.forEach((sec, i) => { if (sec && sec.offsetTop <= scrollPos) idx = i; });
+    navLinks.forEach((a,i) => a.classList.toggle("active", i === idx));
+  }
+  window.addEventListener("scroll", setActiveNav, { passive:true });
+  navLinks.forEach(a => a.addEventListener("click", function(e){
+    e.preventDefault();
+    document.getElementById(a.dataset.target).scrollIntoView({ behavior:"smooth", block:"start" });
+  }));
+
+  /* =========================================================
+     TOAST
+  ========================================================= */
+  let toastTimer;
+  function showToast(msg){
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+  }
+
+  /* =========================================================
+     FILE SAVING (File System Access API + fallback)
+  ========================================================= */
+  async function saveBlob(blob, suggestedName, mimeType, extension, description){
+    if (window.showSaveFilePicker) {
+      try{
+        const handle = await window.showSaveFilePicker({
+          suggestedName: suggestedName,
+          types: [{ description: description, accept: { [mimeType]: ["." + extension] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return "saved";
+      }catch(err){
+        if (err && err.name === "AbortError") return "cancelled";
+        // val terug op download hieronder
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = suggestedName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return "downloaded";
+  }
+
+  /* =========================================================
+     DOCX EXPORT
+  ========================================================= */
+  async function buildDocx(data){
+    const D = window.docx;
+    const BLUE = "002C5B", GREEN = "71A810", ORANGE = "E37222", MUTED = "5B6B77", TEXTC = "1B2733";
+
+    function h1(text){
+      return new D.Paragraph({
+        spacing:{ before:320, after:140 },
+        border:{ bottom:{ color: GREEN, space:4, style: D.BorderStyle.SINGLE, size:8 } },
+        children:[ new D.TextRun({ text, bold:true, color:BLUE, font:"DM Sans", size:26 }) ]
+      });
+    }
+    function label(text){
+      return new D.Paragraph({
+        spacing:{ before:120, after:20 },
+        children:[ new D.TextRun({ text, bold:true, color:MUTED, font:"DM Sans", size:18 }) ]
+      });
+    }
+    function body(text){
+      return new D.Paragraph({
+        spacing:{ after:120 },
+        children:[ new D.TextRun({ text: text && text.length ? text : "-", color:TEXTC, font:"DM Sans", size:21 }) ]
+      });
+    }
+    function bulletList(items){
+      if (!items || !items.length) return [ body("-") ];
+      return items.map(t => new D.Paragraph({
+        bullet:{ level:0 },
+        spacing:{ after:60 },
+        children:[ new D.TextRun({ text:t, color:TEXTC, font:"DM Sans", size:21 }) ]
+      }));
+    }
+    function cell(text, opts){
+      opts = opts || {};
+      return new D.TableCell({
+        width:{ size: opts.width || 33, type: D.WidthType.PERCENTAGE },
+        shading: opts.header ? { fill: BLUE, type: D.ShadingType.CLEAR, color:"auto" } : undefined,
+        margins:{ top:80, bottom:80, left:100, right:100 },
+        children:[ new D.Paragraph({ children:[ new D.TextRun({
+          text: text || "", font:"DM Sans", size:20,
+          bold: !!opts.header, color: opts.header ? "FFFFFF" : TEXTC
+        }) ] }) ]
+      });
+    }
+
+    const children = [];
+
+    // Titelblok
+    children.push(new D.Paragraph({
+      spacing:{ after:40 },
+      children:[ new D.TextRun({ text:"KAM OORZAAKANALYSE", bold:true, color:BLUE, font:"DM Sans", size:40 }) ]
+    }));
+    children.push(new D.Paragraph({
+      spacing:{ after:100 },
+      children:[ new D.TextRun({ text:data.titel, color:GREEN, font:"DM Sans", size:26, bold:true }) ]
+    }));
+    children.push(new D.Paragraph({
+      spacing:{ after:280 },
+      children:[ new D.TextRun({ text:data.categorie + " — " + data.type, color:ORANGE, font:"DM Sans", size:19, bold:true }) ]
+    }));
+
+    // 1. Basisgegevens
+    children.push(h1("1. Basisgegevens"));
+    children.push(new D.Table({
+      width:{ size:100, type:D.WidthType.PERCENTAGE },
+      rows:[
+        new D.TableRow({ children:[ cell("Categorie",{header:true,width:30}), cell(data.categorie || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Type melding",{header:true,width:30}), cell(data.type || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Registratienummer",{header:true,width:30}), cell(data.ncrnummer || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Datum melding",{header:true,width:30}), cell(niceDate(data.datum),{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Melder",{header:true,width:30}), cell(data.melder || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Betrokken proces/afdeling",{header:true,width:30}), cell(data.proces || "-",{width:70}) ] })
+      ]
+    }));
+
+    // 2. Beschrijving
+    children.push(h1("2. Beschrijving van de afwijking"));
+    children.push(body(data.beschrijving));
+
+    // 3. Oorzaakanalyse
+    children.push(h1("3. Oorzaakanalyse"));
+    if (data.methode === "5xwhy" || data.methode === "beide") {
+      children.push(label("Methode: 5x Why"));
+      if (data.whyProbleem) children.push(body("Probleemstelling: " + data.whyProbleem));
+      data.whyValues.forEach((v,i) => {
+        children.push(new D.Paragraph({
+          spacing:{ after:60 },
+          children:[
+            new D.TextRun({ text:"Waarom " + (i+1) + ": ", bold:true, color:GREEN, font:"DM Sans", size:21 }),
+            new D.TextRun({ text: v || "-", color:TEXTC, font:"DM Sans", size:21 })
+          ]
+        }));
+      });
+    }
+    if (data.methode === "ishikawa" || data.methode === "beide") {
+      children.push(label("Methode: Ishikawa (visgraatdiagram) — 6 M's"));
+      const cats = [
+        ["Mens", data.ishikawa.mens], ["Machine", data.ishikawa.machine],
+        ["Methode", data.ishikawa.methode], ["Materiaal", data.ishikawa.materiaal],
+        ["Milieu", data.ishikawa.milieu], ["Meting", data.ishikawa.meting]
+      ].concat((data.ishiExtra||[]).map(c=>[c.naam,c.items]));
+      cats.forEach(([name, items]) => {
+        children.push(new D.Paragraph({
+          spacing:{ before:100, after:20 },
+          children:[ new D.TextRun({ text:name, bold:true, color:BLUE, font:"DM Sans", size:21 }) ]
+        }));
+        children.push(...bulletList(items));
+      });
+    }
+    children.push(label("Geïdentificeerde grondoorzaak"));
+    children.push(body(data.grondoorzaak));
+
+    // 4. Scope
+    children.push(h1("4. Scope / omvang"));
+    children.push(new D.Table({
+      width:{ size:100, type:D.WidthType.PERCENTAGE },
+      rows:[
+        new D.TableRow({ children:[ cell("Getroffen locatie(s)",{header:true,width:30}), cell(data.scope.locaties || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Getroffen proces(sen)",{header:true,width:30}), cell(data.scope.processen || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Getroffen product(en)/dienst(en)",{header:true,width:30}), cell(data.scope.producten || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Periode/tijdspanne",{header:true,width:30}), cell(data.scope.periode || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Aantal betrokken eenheden",{header:true,width:30}), cell(data.scope.aantal || "-",{width:70}) ] }),
+        new D.TableRow({ children:[ cell("Ernst/impact",{header:true,width:30}), cell(data.scope.impact || "-",{width:70}) ] })
+      ]
+    }));
+    if (data.scope.vrijetekst) {
+      children.push(label("Aanvullende toelichting"));
+      children.push(body(data.scope.vrijetekst));
+    }
+
+    // 5. Maatregelen
+    children.push(h1("5. Maatregelenoverzicht"));
+    const measureRows = [ new D.TableRow({ children:[
+      cell("Maatregel",{header:true,width:46}), cell("Verantwoordelijke",{header:true,width:27}), cell("Einddatum/periode",{header:true,width:27})
+    ] }) ];
+    if (data.maatregelen.length) {
+      data.maatregelen.forEach(m => measureRows.push(new D.TableRow({ children:[
+        cell(m.maatregel,{width:46}), cell(m.verantwoordelijke,{width:27}), cell(m.datum,{width:27})
+      ] })));
+    } else {
+      measureRows.push(new D.TableRow({ children:[ cell("-",{width:46}), cell("-",{width:27}), cell("-",{width:27}) ] }));
+    }
+    children.push(new D.Table({ width:{ size:100, type:D.WidthType.PERCENTAGE }, rows: measureRows }));
+
+    // Footer note
+    children.push(h1("6. Aanvullende onderdelen"));
+    extraSections(data).forEach(b=>{ children.push(label(b.label)); b.lines.forEach(t=>children.push(body(t))); });
+    children.push(new D.Paragraph({
+      spacing:{ before:400 },
+      children:[ new D.TextRun({ text:"Gegenereerd met de ROVA KAM Oorzaakanalyse tool " + TOOL_VERSION + " — " + niceDate(new Date().toISOString().slice(0,10)), italics:true, color:MUTED, font:"DM Sans", size:16 }) ]
+    }));
+
+    const doc = new D.Document({
+      styles:{ default:{ document:{ run:{ font:"DM Sans", size:21, color:TEXTC } } } },
+      sections:[{ properties:{}, children }]
+    });
+    return await D.Packer.toBlob(doc);
+  }
+
+  /* =========================================================
+     PDF EXPORT (manuele lay-out, geen html2canvas -> offline betrouwbaar)
+  ========================================================= */
+  function buildPdf(data){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:"pt", format:"a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const marginX = 44;
+    const contentW = pageW - marginX*2;
+    let y = 0;
+
+    const BLUE = [0,44,91], GREEN = [113,168,16], ORANGE = [227,114,34], TEXT = [27,39,51], MUTED = [91,107,119];
+
+    function ensureSpace(needed){
+      if (y + needed > pageH - 50) {
+        doc.addPage();
+        y = 50;
+      }
+    }
+    function drawHeader(){
+      doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);
+      doc.rect(0,0,pageW,72,"F");
+      doc.setTextColor(255,255,255);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(17);
+      doc.text("KAM Oorzaakanalyse", marginX, 32);
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10.5);
+      doc.setTextColor(200,215,224);
+      doc.text(data.titel, marginX, 48);
+      doc.setFontSize(9);
+      doc.setTextColor(240,190,150);
+      doc.text((data.categorie + " — " + data.type).toUpperCase(), marginX, 61);
+      y = 96;
+    }
+    function h1(text){
+      ensureSpace(40);
+      doc.setDrawColor(GREEN[0],GREEN[1],GREEN[2]);
+      doc.setLineWidth(1.4);
+      doc.line(marginX, y, marginX + 26, y);
+      y += 14;
+      doc.setTextColor(BLUE[0],BLUE[1],BLUE[2]);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(13.5);
+      doc.text(text, marginX, y);
+      y += 16;
+    }
+    function labelLine(text){
+      ensureSpace(16);
+      doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(9.5);
+      doc.text(text.toUpperCase(), marginX, y);
+      y += 13;
+    }
+    function paragraph(text){
+      doc.setTextColor(TEXT[0],TEXT[1],TEXT[2]);
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10.5);
+      const lines = doc.splitTextToSize(text && text.length ? text : "-", contentW);
+      lines.forEach(line => {
+        ensureSpace(15);
+        doc.text(line, marginX, y);
+        y += 14;
+      });
+      y += 6;
+    }
+    function keyValueRow(k, v){
+      ensureSpace(18);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(10);
+      doc.setTextColor(BLUE[0],BLUE[1],BLUE[2]);
+      doc.text(k, marginX, y);
+      doc.setFont("helvetica","normal");
+      doc.setTextColor(TEXT[0],TEXT[1],TEXT[2]);
+      const lines = doc.splitTextToSize(v && v.length ? v : "-", contentW - 170);
+      doc.text(lines, marginX + 170, y);
+      y += Math.max(15, lines.length*13);
+    }
+    function bulletBlock(items){
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10.5);
+      doc.setTextColor(TEXT[0],TEXT[1],TEXT[2]);
+      if (!items || !items.length) { paragraph("-"); return; }
+      items.forEach(it => {
+        const lines = doc.splitTextToSize("•  " + it, contentW - 10);
+        lines.forEach(line => { ensureSpace(14); doc.text(line, marginX + 6, y); y += 13; });
+      });
+      y += 6;
+    }
+    function measuresTable(rows){
+      const colW = [contentW*0.46, contentW*0.27, contentW*0.27];
+      const colX = [marginX, marginX+colW[0], marginX+colW[0]+colW[1]];
+      ensureSpace(26);
+      doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);
+      doc.rect(marginX, y, contentW, 20, "F");
+      doc.setTextColor(255,255,255);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(9.5);
+      doc.text("MAATREGEL", colX[0]+6, y+13.5);
+      doc.text("VERANTWOORDELIJKE", colX[1]+6, y+13.5);
+      doc.text("EINDDATUM/PERIODE", colX[2]+6, y+13.5);
+      y += 20;
+
+      const data_rows = rows.length ? rows : [{maatregel:"-", verantwoordelijke:"-", datum:"-"}];
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(9.5);
+      data_rows.forEach((r, idx) => {
+        const mLines = doc.splitTextToSize(r.maatregel || "-", colW[0]-12);
+        const vLines = doc.splitTextToSize(r.verantwoordelijke || "-", colW[1]-12);
+        const dLines = doc.splitTextToSize(r.datum || "-", colW[2]-12);
+        const rowH = Math.max(mLines.length, vLines.length, dLines.length) * 12 + 10;
+        ensureSpace(rowH);
+        if (idx % 2 === 0) { doc.setFillColor(246,249,241); doc.rect(marginX, y, contentW, rowH, "F"); }
+        doc.setTextColor(TEXT[0],TEXT[1],TEXT[2]);
+        doc.text(mLines, colX[0]+6, y+12);
+        doc.text(vLines, colX[1]+6, y+12);
+        doc.text(dLines, colX[2]+6, y+12);
+        y += rowH;
+      });
+      y += 10;
+    }
+
+    drawHeader();
+
+    h1("1. Basisgegevens");
+    keyValueRow("Categorie", data.categorie);
+    keyValueRow("Type melding", data.type);
+    keyValueRow("Registratienummer", data.ncrnummer);
+    keyValueRow("Datum melding", niceDate(data.datum));
+    keyValueRow("Melder", data.melder);
+    keyValueRow("Betrokken proces/afdeling", data.proces);
+    y += 6;
+
+    h1("2. Beschrijving van de afwijking");
+    paragraph(data.beschrijving);
+
+    h1("3. Oorzaakanalyse");
+    if (data.methode === "5xwhy" || data.methode === "beide") {
+      labelLine("Methode: 5x Why");
+      if (data.whyProbleem) paragraph("Probleemstelling: " + data.whyProbleem);
+      data.whyValues.forEach((v,i) => paragraph("Waarom " + (i+1) + ": " + (v || "-")));
+    }
+    if (data.methode === "ishikawa" || data.methode === "beide") {
+      labelLine("Methode: Ishikawa (visgraatdiagram) — 6 M's");
+      const cats = [
+        ["Mens", data.ishikawa.mens], ["Machine", data.ishikawa.machine],
+        ["Methode", data.ishikawa.methode], ["Materiaal", data.ishikawa.materiaal],
+        ["Milieu", data.ishikawa.milieu], ["Meting", data.ishikawa.meting]
+      ].concat((data.ishiExtra||[]).map(c=>[c.naam,c.items]));
+      cats.forEach(([name, items]) => {
+        ensureSpace(16);
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(10.5);
+        doc.setTextColor(BLUE[0],BLUE[1],BLUE[2]);
+        doc.text(name, marginX, y);
+        y += 13;
+        bulletBlock(items);
+      });
+    }
+    labelLine("Geïdentificeerde grondoorzaak");
+    paragraph(data.grondoorzaak);
+
+    h1("4. Scope / omvang");
+    keyValueRow("Getroffen locatie(s)", data.scope.locaties);
+    keyValueRow("Getroffen proces(sen)", data.scope.processen);
+    keyValueRow("Getroffen product(en)/dienst(en)", data.scope.producten);
+    keyValueRow("Periode/tijdspanne", data.scope.periode);
+    keyValueRow("Aantal betrokken eenheden", data.scope.aantal);
+    keyValueRow("Ernst/impact", data.scope.impact);
+    if (data.scope.vrijetekst) {
+      y += 4;
+      labelLine("Aanvullende toelichting");
+      paragraph(data.scope.vrijetekst);
+    }
+
+    h1("5. Maatregelenoverzicht");
+    measuresTable(data.maatregelen);
+
+    h1("6. Aanvullende onderdelen");
+    extraSections(data).forEach(b=>{ labelLine(b.label); b.lines.forEach(t=>paragraph(t)); });
+
+    // footer op elke pagina
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let p=1; p<=pageCount; p++){
+      doc.setPage(p);
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(8);
+      doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+      doc.text("ROVA — KAM Oorzaakanalyse", marginX, pageH-24);
+      doc.text(String(p) + " / " + pageCount, pageW-marginX-20, pageH-24);
+    }
+
+    return doc.output("blob");
+  }
+
+  /* =========================================================
+     EXPORT ORCHESTRATION
+  ========================================================= */
+  $("exportBtn").addEventListener("click", async function(){
+    const statusEl = $("exportStatus");
+    statusEl.className = "export-status";
+    const wantDocx = $("exp_docx").checked;
+    const wantPdf = $("exp_pdf").checked;
+
+    if (!wantDocx && !wantPdf) {
+      statusEl.textContent = "Kies minimaal één bestandstype om te exporteren.";
+      statusEl.classList.add("err");
+      return;
+    }
+    if (!$("f_titel").value.trim()) {
+      const proceed = confirm("Er is nog geen titel ingevuld. Toch doorgaan met exporteren?");
+      if (!proceed) return;
+    }
+
+    const data = gatherData();
+    const baseName = getBaseFilename();
+    $("exportBtn").disabled = true;
+    $("exportBtn").textContent = "Bezig met exporteren...";
+    statusEl.textContent = "";
+
+    const results = [];
+    try{
+      if (wantDocx) {
+        if (!window.docx) {
+          results.push("Word-bibliotheek kon niet laden (controleer internetverbinding).");
+        } else {
+          const blob = await buildDocx(data);
+          const outcome = await saveBlob(blob, baseName + ".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx", "Word-document");
+          results.push(outcome === "cancelled" ? "Word-export geannuleerd." : "Word-document " + (outcome === "saved" ? "opgeslagen." : "gedownload."));
+        }
+      }
+      if (wantPdf) {
+        if (!window.jspdf) {
+          results.push("PDF-bibliotheek kon niet laden (controleer internetverbinding).");
+        } else {
+          const blob = buildPdf(data);
+          const outcome = await saveBlob(blob, baseName + ".pdf", "application/pdf", "pdf", "PDF-document");
+          results.push(outcome === "cancelled" ? "PDF-export geannuleerd." : "PDF-document " + (outcome === "saved" ? "opgeslagen." : "gedownload."));
+        }
+      }
+      statusEl.textContent = results.join(" ");
+      statusEl.classList.add(results.some(r => r.indexOf("kon niet") !== -1) ? "err" : "ok");
+      if (results.some(r => r.indexOf("opgeslagen") !== -1 || r.indexOf("gedownload") !== -1)) {
+        showToast("Export voltooid.");
+      }
+    }catch(err){
+      console.error(err);
+      statusEl.textContent = "Er ging iets mis tijdens het exporteren: " + (err && err.message ? err.message : err);
+      statusEl.classList.add("err");
+    }finally{
+      $("exportBtn").disabled = false;
+      $("exportBtn").textContent = "Exporteren";
+      syncExportBtn();
+    }
+  });
+
+  /* =========================================================
+     STARTUP
+  ========================================================= */
+  restoreDraft();
+  syncTypeOverig();
+  updateFilenamePreview();
+  setActiveNav();
+  syncTile("exp_docx","tileDocx");
+  syncTile("exp_pdf","tilePdf");
+
+})();
+</script>
+</body>
+</html>
